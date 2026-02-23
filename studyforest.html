@@ -1,0 +1,1662 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>StudyForest — Grow While You Learn</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Crimson+Pro:ital,wght@0,300;0,400;1,300&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bark: #3d2b1f;
+  --bark-light: #5c4033;
+  --moss: #4a5e3a;
+  --moss-light: #6b8c57;
+  --canopy: #2d4a22;
+  --canopy-bright: #4a7c35;
+  --soil: #6b4c35;
+  --soil-dark: #3e2b1a;
+  --sky: #c8d5a8;
+  --mist: #e8edd8;
+  --gold: #c9a84c;
+  --gold-light: #e8c97a;
+  --water: #5a7f7c;
+  --water-light: #8ab5b2;
+  --cream: #f4edd8;
+  --fog: rgba(232, 237, 216, 0.6);
+  --shadow: rgba(30, 20, 10, 0.4);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background-color: var(--soil-dark);
+  color: var(--cream);
+  font-family: 'Crimson Pro', serif;
+  overflow-x: hidden;
+  min-height: 100vh;
+}
+
+/* ===================== SCENE ===================== */
+#scene {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: 100vh;
+  overflow: hidden;
+  z-index: 0;
+  background: linear-gradient(180deg, #1a2a12 0%, #2d4a22 40%, #3e2b1a 80%, #2a1a0e 100%);
+}
+
+/* Sky */
+#sky-layer {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 45%;
+  background: linear-gradient(180deg, #0d1a08 0%, #1a3010 50%, #2d4a22 100%);
+  transition: background 2s ease;
+}
+
+/* Stars */
+.star {
+  position: absolute;
+  width: 2px; height: 2px;
+  background: rgba(248, 240, 200, 0.7);
+  border-radius: 50%;
+  animation: twinkle var(--d) ease-in-out infinite;
+}
+@keyframes twinkle {
+  0%,100% { opacity: 0.3; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.5); }
+}
+
+/* Moon */
+#moon {
+  position: absolute;
+  top: 8%;
+  right: 15%;
+  width: 40px; height: 40px;
+  background: radial-gradient(circle at 35% 35%, #f4edd8, #c9a84c);
+  border-radius: 50%;
+  box-shadow: 0 0 20px rgba(201,168,76,0.4), 0 0 60px rgba(201,168,76,0.15);
+  opacity: 0.85;
+}
+
+/* Mountains / far bg */
+#mountain-layer {
+  position: absolute;
+  bottom: 38%;
+  left: 0; right: 0;
+  height: 25%;
+  opacity: 0.5;
+}
+
+/* Ground */
+#ground {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 42%;
+  background: linear-gradient(180deg, #2d1e12 0%, #3e2b1a 100%);
+}
+
+/* Waterfall cliff */
+#cliff {
+  position: absolute;
+  right: 8%;
+  bottom: 25%;
+  width: 90px;
+  height: 140px;
+  background: linear-gradient(160deg, #4a3326 0%, #2d1e12 100%);
+  border-radius: 8px 8px 0 0;
+  clip-path: polygon(15% 0%, 85% 0%, 100% 30%, 100% 100%, 0% 100%, 0% 25%);
+  transition: opacity 1s ease, transform 1s ease;
+}
+#cliff.hidden { opacity: 0; transform: translateY(20px); }
+
+/* Waterfall stream */
+#waterfall-container {
+  position: absolute;
+  right: calc(8% + 28px);
+  bottom: 25%;
+  width: 34px;
+  overflow: hidden;
+  transition: height 2s cubic-bezier(0.25,0.46,0.45,0.94), opacity 1s ease;
+}
+#waterfall-container.hidden { opacity: 0; }
+
+.waterfall-stream {
+  width: 100%;
+  height: 200px;
+  background: linear-gradient(180deg, 
+    rgba(138,181,178,0.9) 0%, 
+    rgba(90,127,124,0.8) 40%,
+    rgba(138,181,178,0.6) 70%,
+    rgba(200,230,228,0.3) 100%);
+  animation: fall 0.6s linear infinite;
+  border-radius: 2px;
+}
+@keyframes fall {
+  0% { transform: translateY(-10px); }
+  100% { transform: translateY(10px); }
+}
+
+/* Mist at base of waterfall */
+#mist-pool {
+  position: absolute;
+  right: calc(8% - 20px);
+  bottom: 22%;
+  width: 100px;
+  height: 30px;
+  background: radial-gradient(ellipse, rgba(200,220,218,0.5), transparent 70%);
+  border-radius: 50%;
+  animation: mistPulse 3s ease-in-out infinite;
+  opacity: 0;
+  transition: opacity 2s ease;
+}
+@keyframes mistPulse {
+  0%,100% { transform: scaleX(1); opacity: 0.5; }
+  50% { transform: scaleX(1.2); opacity: 0.8; }
+}
+
+/* Pool */
+#pool {
+  position: absolute;
+  right: calc(8% - 15px);
+  bottom: 22%;
+  width: 80px;
+  height: 18px;
+  background: linear-gradient(90deg, rgba(90,127,124,0.8), rgba(138,181,178,0.6));
+  border-radius: 50%;
+  opacity: 0;
+  transition: opacity 2s ease;
+  animation: poolShimmer 4s ease-in-out infinite;
+}
+@keyframes poolShimmer {
+  0%,100% { filter: brightness(1); }
+  50% { filter: brightness(1.3); }
+}
+
+/* ===================== TREES ===================== */
+.tree {
+  position: absolute;
+  bottom: 26%;
+  transform-origin: bottom center;
+  animation: treeSway var(--sway, 6s) ease-in-out infinite;
+  transition: opacity 1.5s ease, transform 1.5s cubic-bezier(0.34,1.56,0.64,1);
+}
+@keyframes treeSway {
+  0%,100% { transform: rotate(-0.8deg) scaleX(1); }
+  50% { transform: rotate(0.8deg) scaleX(1.01); }
+}
+.tree.hidden { opacity: 0; transform: scaleY(0) !important; transform-origin: bottom center; }
+.tree.growing { animation: grow 1.5s cubic-bezier(0.34,1.56,0.64,1) forwards, treeSway var(--sway, 6s) ease-in-out 1.5s infinite; }
+@keyframes grow {
+  0% { transform: scaleY(0); opacity: 0; }
+  60% { opacity: 1; }
+  100% { transform: scaleY(1); opacity: 1; }
+}
+
+/* fireflies */
+.firefly {
+  position: absolute;
+  width: 4px; height: 4px;
+  background: #e8c97a;
+  border-radius: 50%;
+  box-shadow: 0 0 6px #e8c97a, 0 0 12px rgba(232,201,122,0.5);
+  animation: fireflyFloat var(--fd, 8s) ease-in-out infinite var(--fd2, 0s);
+  opacity: 0;
+}
+@keyframes fireflyFloat {
+  0% { transform: translate(0, 0); opacity: 0; }
+  20% { opacity: 0.9; }
+  50% { transform: translate(var(--fx, 30px), var(--fy, -20px)); opacity: 0.6; }
+  80% { opacity: 0.9; }
+  100% { transform: translate(0, 0); opacity: 0; }
+}
+
+/* Ambient particles (leaves) */
+.leaf-particle {
+  position: absolute;
+  width: 6px; height: 4px;
+  background: var(--moss-light);
+  border-radius: 50% 0;
+  opacity: 0;
+  animation: leafFall var(--lf, 12s) linear infinite var(--lfd, 0s);
+}
+@keyframes leafFall {
+  0% { opacity: 0; transform: translate(0, -20px) rotate(0deg); }
+  10% { opacity: 0.7; }
+  90% { opacity: 0.3; }
+  100% { opacity: 0; transform: translate(var(--lfx, 40px), 80vh) rotate(360deg); }
+}
+
+/* ===================== MAIN UI ===================== */
+#app {
+  position: relative;
+  z-index: 10;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Header */
+header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 32px;
+  background: linear-gradient(180deg, rgba(13,26,8,0.85), transparent);
+}
+.logo {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.4rem;
+  color: var(--gold-light);
+  letter-spacing: 0.05em;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.logo span { font-style: italic; color: var(--sky); }
+.nav-btns { display: flex; gap: 12px; }
+.nav-btn {
+  background: rgba(61,43,31,0.6);
+  border: 1px solid rgba(201,168,76,0.25);
+  color: var(--cream);
+  font-family: 'Crimson Pro', serif;
+  font-size: 0.85rem;
+  padding: 7px 16px;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.2s;
+  backdrop-filter: blur(8px);
+}
+.nav-btn:hover, .nav-btn.active {
+  background: rgba(201,168,76,0.2);
+  border-color: var(--gold);
+  color: var(--gold-light);
+}
+
+/* ===================== TIMER PANEL ===================== */
+#timer-panel {
+  margin-top: 40px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+}
+
+.session-label {
+  font-family: 'Playfair Display', serif;
+  font-size: 0.75rem;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 12px;
+  opacity: 0.85;
+}
+
+/* Ring timer */
+.timer-ring-wrapper {
+  position: relative;
+  width: 220px;
+  height: 220px;
+}
+.timer-ring-wrapper svg {
+  transform: rotate(-90deg);
+}
+.ring-bg { fill: none; stroke: rgba(74,94,58,0.25); stroke-width: 6; }
+.ring-progress {
+  fill: none;
+  stroke: url(#ringGrad);
+  stroke-width: 6;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 1s linear;
+}
+.timer-display {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.timer-time {
+  font-family: 'Space Mono', monospace;
+  font-size: 2.8rem;
+  color: var(--cream);
+  line-height: 1;
+  text-shadow: 0 0 30px rgba(232,201,122,0.3);
+}
+.timer-phase {
+  font-family: 'Crimson Pro', serif;
+  font-size: 0.8rem;
+  color: var(--moss-light);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  margin-top: 5px;
+}
+
+/* Timer controls */
+.timer-controls {
+  display: flex;
+  gap: 14px;
+  margin-top: 22px;
+  align-items: center;
+}
+.ctrl-btn {
+  background: rgba(61,43,31,0.7);
+  border: 1px solid rgba(201,168,76,0.3);
+  color: var(--cream);
+  width: 48px; height: 48px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 1.1rem;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.2s;
+  backdrop-filter: blur(10px);
+}
+.ctrl-btn:hover {
+  background: rgba(201,168,76,0.2);
+  border-color: var(--gold);
+  transform: scale(1.08);
+}
+.ctrl-btn.primary {
+  width: 60px; height: 60px;
+  font-size: 1.4rem;
+  background: linear-gradient(135deg, rgba(74,124,53,0.8), rgba(45,74,34,0.9));
+  border-color: var(--canopy-bright);
+  box-shadow: 0 4px 20px rgba(74,124,53,0.3);
+}
+.ctrl-btn.primary:hover {
+  background: linear-gradient(135deg, rgba(107,140,87,0.9), rgba(74,124,53,0.9));
+  transform: scale(1.1);
+  box-shadow: 0 6px 30px rgba(74,124,53,0.5);
+}
+
+/* Session dots */
+.session-dots {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+}
+.session-dot {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(201,168,76,0.4);
+  transition: all 0.4s;
+}
+.session-dot.done {
+  background: var(--gold);
+  border-color: var(--gold);
+  box-shadow: 0 0 8px rgba(201,168,76,0.5);
+}
+.session-dot.active {
+  background: rgba(201,168,76,0.4);
+  border-color: var(--gold-light);
+  animation: pulseDot 1.5s ease-in-out infinite;
+}
+@keyframes pulseDot { 0%,100%{box-shadow:0 0 4px rgba(201,168,76,0.3)}50%{box-shadow:0 0 12px rgba(201,168,76,0.7)} }
+
+/* ===================== STATS BAR ===================== */
+#stats-bar {
+  margin-top: 24px;
+  display: flex;
+  gap: 20px;
+  background: rgba(30,20,10,0.5);
+  border: 1px solid rgba(201,168,76,0.15);
+  border-radius: 16px;
+  padding: 14px 28px;
+  backdrop-filter: blur(12px);
+  font-family: 'Crimson Pro', serif;
+}
+.stat-item {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.stat-val {
+  font-size: 1.4rem;
+  color: var(--gold-light);
+  line-height: 1;
+}
+.stat-lbl {
+  font-size: 0.7rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--moss-light);
+  opacity: 0.8;
+}
+.stat-sep {
+  width: 1px;
+  background: rgba(201,168,76,0.15);
+}
+
+/* ===================== TECHNIQUE PANEL ===================== */
+#technique-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: rgba(13,20,8,0.85);
+  backdrop-filter: blur(12px);
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+#technique-overlay.open { display: flex; }
+
+.technique-panel {
+  background: linear-gradient(160deg, #2a1e14 0%, #1e2a14 100%);
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: 24px;
+  padding: 36px;
+  max-width: 860px;
+  width: 100%;
+  max-height: 85vh;
+  overflow-y: auto;
+  position: relative;
+}
+.technique-panel::-webkit-scrollbar { width: 4px; }
+.technique-panel::-webkit-scrollbar-track { background: transparent; }
+.technique-panel::-webkit-scrollbar-thumb { background: var(--moss); border-radius: 4px; }
+
+.panel-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.6rem;
+  color: var(--gold-light);
+  margin-bottom: 8px;
+}
+.panel-subtitle {
+  font-size: 0.95rem;
+  color: var(--sky);
+  opacity: 0.8;
+  margin-bottom: 28px;
+}
+.close-btn {
+  position: absolute;
+  top: 20px; right: 20px;
+  background: rgba(61,43,31,0.6);
+  border: 1px solid rgba(201,168,76,0.2);
+  color: var(--cream);
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 1rem;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.2s;
+}
+.close-btn:hover { background: rgba(201,168,76,0.2); color: var(--gold); }
+
+/* Day modes */
+.day-modes {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 14px;
+  margin-bottom: 32px;
+}
+.day-card {
+  background: rgba(61,43,31,0.4);
+  border: 1.5px solid rgba(201,168,76,0.15);
+  border-radius: 16px;
+  padding: 18px;
+  cursor: pointer;
+  transition: all 0.25s;
+  position: relative;
+  overflow: hidden;
+}
+.day-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--card-accent, rgba(74,94,58,0.1));
+  opacity: 0;
+  transition: opacity 0.25s;
+}
+.day-card:hover::before, .day-card.selected::before { opacity: 1; }
+.day-card.selected {
+  border-color: var(--gold);
+  box-shadow: 0 0 20px rgba(201,168,76,0.15);
+}
+.day-card-icon { font-size: 1.8rem; margin-bottom: 8px; }
+.day-card-name {
+  font-family: 'Playfair Display', serif;
+  font-size: 1rem;
+  color: var(--gold-light);
+  margin-bottom: 4px;
+}
+.day-card-desc { font-size: 0.82rem; color: var(--sky); opacity: 0.8; line-height: 1.4; }
+
+/* Techniques */
+.technique-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 14px;
+}
+.tech-card {
+  background: rgba(30,42,20,0.5);
+  border: 1.5px solid rgba(107,140,87,0.2);
+  border-radius: 14px;
+  padding: 18px;
+  cursor: pointer;
+  transition: all 0.25s;
+}
+.tech-card:hover, .tech-card.selected {
+  border-color: var(--moss-light);
+  background: rgba(74,94,58,0.3);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 24px rgba(74,94,58,0.2);
+}
+.tech-name {
+  font-family: 'Playfair Display', serif;
+  font-size: 1rem;
+  color: var(--cream);
+  margin-bottom: 6px;
+  display: flex; align-items: center; gap: 8px;
+}
+.tech-tag {
+  font-size: 0.65rem;
+  background: rgba(201,168,76,0.2);
+  color: var(--gold);
+  padding: 2px 7px;
+  border-radius: 10px;
+  letter-spacing: 0.08em;
+}
+.tech-desc { font-size: 0.82rem; color: var(--sky); opacity: 0.75; line-height: 1.5; }
+.tech-time { font-family: 'Space Mono', monospace; font-size: 0.72rem; color: var(--moss-light); margin-top: 8px; }
+
+/* Apply btn */
+.apply-btn {
+  margin-top: 28px;
+  width: 100%;
+  padding: 14px;
+  background: linear-gradient(135deg, rgba(74,124,53,0.8), rgba(45,74,34,0.9));
+  border: 1px solid var(--canopy-bright);
+  border-radius: 14px;
+  color: var(--cream);
+  font-family: 'Playfair Display', serif;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.25s;
+  letter-spacing: 0.05em;
+}
+.apply-btn:hover {
+  background: linear-gradient(135deg, rgba(107,140,87,0.9), rgba(74,124,53,0.9));
+  transform: translateY(-1px);
+  box-shadow: 0 6px 24px rgba(74,124,53,0.3);
+}
+
+/* ===================== FOREST PROGRESS OVERLAY ===================== */
+#progress-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: rgba(13,20,8,0.88);
+  backdrop-filter: blur(12px);
+  align-items: center;
+  justify-content: center;
+}
+#progress-overlay.open { display: flex; }
+
+.progress-panel {
+  background: linear-gradient(160deg, #2a1e14 0%, #1e2a14 100%);
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: 24px;
+  padding: 36px;
+  max-width: 520px;
+  width: 90%;
+  position: relative;
+}
+.forest-meter {
+  background: rgba(30,42,20,0.5);
+  border: 1px solid rgba(107,140,87,0.2);
+  border-radius: 12px;
+  padding: 20px;
+  margin: 20px 0;
+}
+.forest-meter-bar {
+  height: 12px;
+  background: rgba(61,43,31,0.5);
+  border-radius: 6px;
+  overflow: hidden;
+  margin-top: 10px;
+}
+.forest-meter-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--moss), var(--canopy-bright));
+  border-radius: 6px;
+  transition: width 1s ease;
+  box-shadow: 0 0 10px rgba(74,124,53,0.4);
+}
+.forest-items {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-top: 16px;
+}
+.forest-item {
+  text-align: center;
+  padding: 12px;
+  background: rgba(61,43,31,0.3);
+  border-radius: 10px;
+  border: 1px solid rgba(201,168,76,0.12);
+}
+.forest-item-icon { font-size: 1.8rem; margin-bottom: 4px; }
+.forest-item-name { font-size: 0.72rem; color: var(--sky); opacity: 0.8; }
+.forest-item-count {
+  font-family: 'Space Mono', monospace;
+  font-size: 1rem;
+  color: var(--gold-light);
+}
+
+/* ===================== COMPLETION POPUP ===================== */
+#completion-popup {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+#completion-popup.show { display: flex; }
+
+.completion-card {
+  background: linear-gradient(160deg, rgba(42,30,20,0.97) 0%, rgba(30,42,20,0.97) 100%);
+  border: 1.5px solid var(--gold);
+  border-radius: 24px;
+  padding: 40px 48px;
+  text-align: center;
+  animation: popIn 0.6s cubic-bezier(0.34,1.56,0.64,1) forwards;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.6), 0 0 40px rgba(201,168,76,0.15);
+  pointer-events: all;
+}
+@keyframes popIn {
+  0% { opacity: 0; transform: scale(0.7) translateY(20px); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+.completion-emoji { font-size: 3rem; margin-bottom: 12px; animation: bounce 0.5s ease-in-out 0.3s 3; }
+@keyframes bounce { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
+.completion-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.5rem;
+  color: var(--gold-light);
+  margin-bottom: 8px;
+}
+.completion-desc { font-size: 0.95rem; color: var(--sky); opacity: 0.85; margin-bottom: 20px; }
+.completion-dismiss {
+  background: rgba(74,94,58,0.4);
+  border: 1px solid var(--moss-light);
+  color: var(--cream);
+  padding: 10px 28px;
+  border-radius: 20px;
+  cursor: pointer;
+  font-family: 'Crimson Pro', serif;
+  font-size: 0.9rem;
+  transition: all 0.2s;
+}
+.completion-dismiss:hover { background: rgba(74,124,53,0.6); transform: scale(1.03); }
+
+/* ===================== CURRENT TECHNIQUE BADGE ===================== */
+#technique-badge {
+  margin-top: 16px;
+  background: rgba(30,42,20,0.6);
+  border: 1px solid rgba(107,140,87,0.25);
+  border-radius: 20px;
+  padding: 8px 20px;
+  font-size: 0.82rem;
+  color: var(--sky);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+#technique-badge:hover { border-color: var(--moss-light); background: rgba(74,94,58,0.3); }
+#technique-badge strong { color: var(--gold-light); }
+
+/* ===================== FOREST LEVEL DISPLAY ===================== */
+#forest-level {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(13,20,8,0.7);
+  border: 1px solid rgba(107,140,87,0.25);
+  border-radius: 20px;
+  padding: 10px 24px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  backdrop-filter: blur(10px);
+  font-size: 0.82rem;
+  color: var(--sky);
+  z-index: 15;
+}
+.level-label { color: var(--moss-light); letter-spacing: 0.1em; text-transform: uppercase; }
+.level-name {
+  font-family: 'Playfair Display', serif;
+  color: var(--gold-light);
+  font-size: 0.92rem;
+}
+.level-bar-wrap {
+  width: 80px;
+  height: 4px;
+  background: rgba(74,94,58,0.3);
+  border-radius: 2px;
+}
+.level-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--moss-light), var(--gold));
+  border-radius: 2px;
+  transition: width 0.5s ease;
+}
+.tree-count { display: flex; align-items: center; gap: 5px; }
+
+/* Section headers in panels */
+.section-head {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.1rem;
+  color: var(--cream);
+  margin-bottom: 14px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(201,168,76,0.15);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Scrollbar global */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: rgba(30,20,10,0.3); }
+::-webkit-scrollbar-thumb { background: var(--moss); border-radius: 4px; }
+
+/* Break mode tint */
+body.break-mode #scene {
+  filter: hue-rotate(180deg) saturate(0.7);
+}
+body.break-mode .timer-phase { color: var(--water-light); }
+
+/* Notification badge */
+.notif {
+  position: fixed;
+  top: 80px;
+  right: 24px;
+  background: rgba(42,30,20,0.95);
+  border: 1px solid var(--gold);
+  border-radius: 14px;
+  padding: 12px 20px;
+  font-size: 0.88rem;
+  color: var(--cream);
+  z-index: 300;
+  opacity: 0;
+  transform: translateX(20px);
+  transition: all 0.4s;
+  max-width: 240px;
+}
+.notif.show { opacity: 1; transform: translateX(0); }
+
+/* Responsive */
+@media(max-width: 600px) {
+  #stats-bar { gap: 12px; padding: 12px 16px; }
+  .timer-time { font-size: 2.2rem; }
+  .technique-panel { padding: 24px 20px; }
+  .day-modes { grid-template-columns: repeat(2, 1fr); }
+  header { padding: 16px 20px; }
+  .logo { font-size: 1.1rem; }
+}
+</style>
+</head>
+<body>
+
+<!-- FOREST SCENE -->
+<div id="scene">
+  <div id="sky-layer"></div>
+  <div id="moon"></div>
+  <canvas id="mountain-canvas" id="mountain-layer" style="position:absolute;bottom:38%;left:0;right:0;width:100%;height:25%;opacity:0.4;"></canvas>
+  <div id="ground"></div>
+
+  <!-- Trees injected by JS -->
+  <div id="forest-container"></div>
+
+  <!-- Waterfall -->
+  <div id="cliff" class="hidden"></div>
+  <div id="waterfall-container" class="hidden" style="height:0px;">
+    <div class="waterfall-stream"></div>
+  </div>
+  <div id="mist-pool"></div>
+  <div id="pool"></div>
+
+  <!-- Fireflies -->
+  <div id="firefly-container"></div>
+  <!-- Leaves -->
+  <div id="leaf-container"></div>
+</div>
+
+<!-- SVG defs for ring gradient -->
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <linearGradient id="ringGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#c9a84c"/>
+      <stop offset="50%" stop-color="#6b8c57"/>
+      <stop offset="100%" stop-color="#c9a84c"/>
+    </linearGradient>
+  </defs>
+</svg>
+
+<!-- MAIN APP -->
+<div id="app">
+  <header>
+    <div class="logo">🌿 Study<span>Forest</span></div>
+    <div class="nav-btns">
+      <button class="nav-btn" onclick="openTechnique()">🎯 Techniques</button>
+      <button class="nav-btn" onclick="openProgress()">🌲 Forest</button>
+    </div>
+  </header>
+
+  <div id="timer-panel">
+    <div class="session-label" id="session-label">Focus Session</div>
+
+    <div class="timer-ring-wrapper">
+      <svg width="220" height="220" viewBox="0 0 220 220">
+        <circle class="ring-bg" cx="110" cy="110" r="100"/>
+        <circle class="ring-progress" id="ring-progress" cx="110" cy="110" r="100"
+          stroke-dasharray="628.3" stroke-dashoffset="0"/>
+      </svg>
+      <div class="timer-display">
+        <div class="timer-time" id="timer-display">25:00</div>
+        <div class="timer-phase" id="timer-phase">ready</div>
+      </div>
+    </div>
+
+    <div class="timer-controls">
+      <button class="ctrl-btn" onclick="skipPhase()" title="Skip">⏭</button>
+      <button class="ctrl-btn primary" id="play-btn" onclick="toggleTimer()">▶</button>
+      <button class="ctrl-btn" onclick="resetTimer()" title="Reset">↺</button>
+    </div>
+
+    <div class="session-dots" id="session-dots"></div>
+  </div>
+
+  <div id="stats-bar">
+    <div class="stat-item">
+      <div class="stat-val" id="stat-today">0</div>
+      <div class="stat-lbl">Today</div>
+    </div>
+    <div class="stat-sep"></div>
+    <div class="stat-item">
+      <div class="stat-val" id="stat-total">0</div>
+      <div class="stat-lbl">Total</div>
+    </div>
+    <div class="stat-sep"></div>
+    <div class="stat-item">
+      <div class="stat-val" id="stat-streak">0🔥</div>
+      <div class="stat-lbl">Streak</div>
+    </div>
+    <div class="stat-sep"></div>
+    <div class="stat-item">
+      <div class="stat-val" id="stat-mins">0</div>
+      <div class="stat-lbl">Mins Focus</div>
+    </div>
+  </div>
+
+  <div id="technique-badge" onclick="openTechnique()">
+    <span>🎯</span>
+    <span>Mode: <strong id="badge-mode">Classic Pomodoro</strong></span>
+    <span style="color:var(--moss-light);font-size:0.75rem;">· change ›</span>
+  </div>
+</div>
+
+<!-- Forest level bar -->
+<div id="forest-level">
+  <span class="level-label">Forest</span>
+  <span class="level-name" id="level-name">Seedling Grove</span>
+  <div class="level-bar-wrap">
+    <div class="level-bar-fill" id="level-bar-fill" style="width:0%"></div>
+  </div>
+  <span class="tree-count">🌲 <span id="tree-count-display">0</span></span>
+</div>
+
+<!-- ===================== TECHNIQUE OVERLAY ===================== -->
+<div id="technique-overlay">
+  <div class="technique-panel">
+    <button class="close-btn" onclick="closeTechnique()">✕</button>
+    <div class="panel-title">Choose Your Study Path</div>
+    <div class="panel-subtitle">Select the mode that matches your energy today</div>
+
+    <div class="section-head">🌤 Today's Energy</div>
+    <div class="day-modes" id="day-modes-grid"></div>
+
+    <div class="section-head">🧠 Study Techniques</div>
+    <div class="technique-grid" id="technique-grid"></div>
+
+    <button class="apply-btn" onclick="applyTechnique()">🌱 Plant This Session</button>
+  </div>
+</div>
+
+<!-- ===================== PROGRESS OVERLAY ===================== -->
+<div id="progress-overlay">
+  <div class="progress-panel">
+    <button class="close-btn" onclick="closeProgress()">✕</button>
+    <div class="panel-title">Your Forest</div>
+    <div class="panel-subtitle">Every focus session grows your world</div>
+
+    <div class="forest-meter">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <span style="font-family:'Playfair Display',serif;color:var(--gold-light)" id="p-level-name">Seedling Grove</span>
+        <span style="font-family:'Space Mono',monospace;font-size:0.8rem;color:var(--moss-light)" id="p-level-num">Level 1</span>
+      </div>
+      <div class="forest-meter-bar">
+        <div class="forest-meter-fill" id="p-level-fill" style="width:0%"></div>
+      </div>
+      <div style="font-size:0.75rem;color:var(--sky);opacity:0.7;margin-top:6px;text-align:right" id="p-next-level"></div>
+    </div>
+
+    <div class="forest-items" id="forest-items-grid"></div>
+
+    <div style="margin-top:20px;background:rgba(30,42,20,0.4);border-radius:12px;padding:16px;font-size:0.85rem;">
+      <div class="section-head" style="margin-bottom:12px;">📊 All Time</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div style="text-align:center">
+          <div style="font-family:'Space Mono',monospace;font-size:1.3rem;color:var(--gold-light)" id="p-total-sessions">0</div>
+          <div style="font-size:0.72rem;color:var(--sky);opacity:0.7;text-transform:uppercase;letter-spacing:0.1em">Sessions</div>
+        </div>
+        <div style="text-align:center">
+          <div style="font-family:'Space Mono',monospace;font-size:1.3rem;color:var(--gold-light)" id="p-total-hours">0h</div>
+          <div style="font-size:0.72rem;color:var(--sky);opacity:0.7;text-transform:uppercase;letter-spacing:0.1em">Focus Time</div>
+        </div>
+        <div style="text-align:center">
+          <div style="font-family:'Space Mono',monospace;font-size:1.3rem;color:var(--gold-light)" id="p-best-streak">0</div>
+          <div style="font-size:0.72rem;color:var(--sky);opacity:0.7;text-transform:uppercase;letter-spacing:0.1em">Best Streak</div>
+        </div>
+        <div style="text-align:center">
+          <div style="font-family:'Space Mono',monospace;font-size:1.3rem;color:var(--gold-light)" id="p-trees">0</div>
+          <div style="font-size:0.72rem;color:var(--sky);opacity:0.7;text-transform:uppercase;letter-spacing:0.1em">Trees Grown</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Completion popup -->
+<div id="completion-popup">
+  <div class="completion-card">
+    <div class="completion-emoji" id="comp-emoji">🌱</div>
+    <div class="completion-title" id="comp-title">Session Complete!</div>
+    <div class="completion-desc" id="comp-desc">Your forest is growing...</div>
+    <button class="completion-dismiss" onclick="dismissCompletion()">Continue →</button>
+  </div>
+</div>
+
+<!-- Notification -->
+<div class="notif" id="notif"></div>
+
+<script>
+// ===================== DATA =====================
+const DAY_MODES = [
+  { id: 'normal', icon: '☀️', name: 'Regular Day', desc: 'Balanced focus and breaks', accent: 'rgba(74,94,58,0.15)' },
+  { id: 'exam', icon: '📚', name: 'Exam Mode', desc: 'Deep work marathon sessions', accent: 'rgba(107,60,40,0.2)' },
+  { id: 'burnout', icon: '🌧️', name: 'Burnout Day', desc: 'Short bursts, gentle pace', accent: 'rgba(60,80,100,0.2)' },
+  { id: 'lazy', icon: '🛋️', name: 'Lazy Day', desc: 'Light study, long breaks', accent: 'rgba(80,60,100,0.2)' },
+  { id: 'creative', icon: '🎨', name: 'Creative Flow', desc: 'Flexible free-form work', accent: 'rgba(100,80,40,0.15)' },
+  { id: 'review', icon: '🔁', name: 'Review Mode', desc: 'Spaced repetition focus', accent: 'rgba(40,90,80,0.2)' },
+];
+
+const TECHNIQUES = [
+  { id: 'pomodoro', name: 'Pomodoro', icon: '🍅', tag: 'CLASSIC', desc: 'The gold standard: focused work with structured breaks. Trains focus over time.', focus: 25, short: 5, long: 15, sessions: 4 },
+  { id: 'deep', name: 'Deep Work', icon: '🔬', tag: 'INTENSE', desc: 'Extended 90-min focus blocks. For complex cognitive tasks requiring full immersion.', focus: 90, short: 20, long: 30, sessions: 2 },
+  { id: 'feynman', name: 'Feynman Technique', icon: '✍️', tag: 'CONCEPTUAL', desc: 'Learn by explaining. 20 min study, then 10 min write/explain in simple terms.', focus: 20, short: 10, long: 20, sessions: 4 },
+  { id: 'micro', name: 'Micro Sprints', icon: '⚡', tag: 'QUICK', desc: '10 min bursts for scattered attention days. Great for starting difficult tasks.', focus: 10, short: 3, long: 10, sessions: 6 },
+  { id: 'ultradian', name: 'Ultradian Rhythm', icon: '🌊', tag: 'FLOW', desc: '52 min focus aligned with natural brain cycles. Science-backed deep focus.', focus: 52, short: 17, long: 25, sessions: 3 },
+  { id: 'spaced', name: 'Spaced Repetition', icon: '🗓️', tag: 'MEMORY', desc: 'Timed review intervals to encode memory permanently. Ideal for exam prep.', focus: 25, short: 5, long: 15, sessions: 4 },
+  { id: 'active', name: 'Active Recall', icon: '🧩', tag: 'RETENTION', desc: 'Study 20 min, close notes and test yourself for 5 min. Rapid memory building.', focus: 20, short: 5, long: 15, sessions: 4 },
+  { id: 'timeblock', name: 'Time Blocking', icon: '📅', tag: 'PLANNING', desc: 'Assign every minute. 45 min subject blocks with rigid switching schedule.', focus: 45, short: 10, long: 20, sessions: 3 },
+];
+
+const DAY_PRESETS = {
+  exam: 'deep',
+  burnout: 'micro',
+  lazy: 'micro',
+  normal: 'pomodoro',
+  creative: 'ultradian',
+  review: 'spaced',
+};
+
+const FOREST_LEVELS = [
+  { name: 'Seedling Grove', min: 0, max: 4 },
+  { name: 'Sprout Clearing', min: 5, max: 9 },
+  { name: 'Sapling Hollow', min: 10, max: 19 },
+  { name: 'Young Forest', min: 20, max: 34 },
+  { name: 'Canopy Realm', min: 35, max: 54 },
+  { name: 'Ancient Wood', min: 55, max: 79 },
+  { name: 'Enchanted Grove', min: 80, max: 119 },
+  { name: 'Primordial Forest', min: 120, max: Infinity },
+];
+
+const TREE_TYPES = [
+  { emoji: '🌱', name: 'Sprout', threshold: 0 },
+  { emoji: '🌿', name: 'Fern', threshold: 2 },
+  { emoji: '🌲', name: 'Pine', threshold: 5 },
+  { emoji: '🌳', name: 'Oak', threshold: 10 },
+  { emoji: '🎋', name: 'Bamboo', threshold: 20 },
+  { emoji: '🌴', name: 'Palm', threshold: 35 },
+];
+
+// ===================== STATE =====================
+let state = loadState();
+let selectedDayMode = 'normal';
+let selectedTechnique = 'pomodoro';
+let timerInterval = null;
+let isRunning = false;
+let timeLeft = 0;
+let currentPhase = 'focus'; // focus | short | long
+let currentSession = 0;
+let totalDuration = 0;
+let currentTechniqueObj = getTechnique('pomodoro');
+
+function loadState() {
+  try {
+    const s = JSON.parse(localStorage.getItem('studyforest_v2') || 'null');
+    if (s) return s;
+  } catch(e) {}
+  return {
+    totalSessions: 0,
+    totalMinutes: 0,
+    todaySessions: 0,
+    todayDate: new Date().toDateString(),
+    streak: 0,
+    lastActiveDate: null,
+    bestStreak: 0,
+    trees: 0,
+    waterfallUnlocked: false,
+    completedToday: false,
+  };
+}
+
+function saveState() {
+  localStorage.setItem('studyforest_v2', JSON.stringify(state));
+}
+
+function checkNewDay() {
+  const today = new Date().toDateString();
+  if (state.todayDate !== today) {
+    // check streak
+    const yesterday = new Date(Date.now() - 86400000).toDateString();
+    if (state.lastActiveDate === yesterday) {
+      state.streak++;
+    } else if (state.lastActiveDate !== today) {
+      state.streak = 0;
+    }
+    state.todaySessions = 0;
+    state.todayDate = today;
+    state.completedToday = false;
+    saveState();
+  }
+}
+
+function getTechnique(id) {
+  return TECHNIQUES.find(t => t.id === id) || TECHNIQUES[0];
+}
+
+// ===================== SCENE GENERATION =====================
+const TREE_TEMPLATES = [
+  // [bottom%, left%, scale, sway, zIndex]
+  [26, 5, 0.7, '7s', 2],
+  [26, 12, 1.0, '6s', 3],
+  [26, 22, 0.85, '8s', 2],
+  [26, 30, 1.1, '5.5s', 4],
+  [26, 40, 0.9, '7.5s', 3],
+  [26, 48, 1.2, '6s', 5],
+  [26, 55, 0.8, '9s', 2],
+  [26, 62, 1.0, '6.5s', 4],
+  [26, 70, 1.15, '7s', 3],
+  [26, 77, 0.75, '8.5s', 2],
+  [26, 85, 1.05, '6s', 4],
+  [26, 92, 0.7, '7.5s', 2],
+  // second row (foreground)
+  [22, 2, 1.3, '5s', 8],
+  [22, 10, 0.9, '7s', 7],
+  [22, 20, 1.2, '6s', 8],
+  [22, 35, 1.0, '8s', 7],
+  [22, 50, 1.4, '5.5s', 9],
+  [22, 65, 1.1, '7s', 7],
+  [22, 80, 1.25, '6.5s', 8],
+  [22, 90, 0.95, '8s', 7],
+];
+
+function buildTreeSVG(height, scale) {
+  const h = height * scale;
+  const trunkW = 14 * scale;
+  const trunkH = h * 0.4;
+  const canopyW = h * 0.7;
+  const canopyH = h * 0.7;
+  
+  return `<svg width="${canopyW+20}" height="${h+10}" viewBox="0 0 ${canopyW+20} ${h+10}" xmlns="http://www.w3.org/2000/svg">
+    <!-- trunk -->
+    <rect x="${(canopyW+20-trunkW)/2}" y="${canopyH*0.7}" width="${trunkW}" height="${trunkH}"
+      rx="${trunkW/3}" fill="#5c4033"/>
+    <!-- moss on trunk -->
+    <ellipse cx="${(canopyW+20)/2}" cy="${canopyH*0.7+trunkH*0.2}" rx="${trunkW*0.7}" ry="${trunkH*0.08}" fill="#4a5e3a" opacity="0.6"/>
+    <!-- canopy layers -->
+    <ellipse cx="${(canopyW+20)/2}" cy="${canopyH*0.55}" rx="${canopyW*0.5}" ry="${canopyH*0.35}" fill="#2d4a22"/>
+    <ellipse cx="${(canopyW+20)/2}" cy="${canopyH*0.35}" rx="${canopyW*0.38}" ry="${canopyH*0.28}" fill="#3a5c2a"/>
+    <ellipse cx="${(canopyW+20)/2}" cy="${canopyH*0.15}" rx="${canopyW*0.25}" ry="${canopyH*0.18}" fill="#4a7c35"/>
+    <!-- light patches -->
+    <ellipse cx="${(canopyW+20)/2-canopyW*0.1}" cy="${canopyH*0.25}" rx="${canopyW*0.08}" ry="${canopyH*0.05}" fill="#6b8c57" opacity="0.6"/>
+    <ellipse cx="${(canopyW+20)/2+canopyW*0.12}" cy="${canopyH*0.45}" rx="${canopyW*0.06}" ry="${canopyH*0.04}" fill="#6b8c57" opacity="0.5"/>
+  </svg>`;
+}
+
+function initForest() {
+  const container = document.getElementById('forest-container');
+  container.innerHTML = '';
+  
+  TREE_TEMPLATES.forEach((t, i) => {
+    const [bottom, left, scale, sway, zi] = t;
+    const height = 120;
+    const div = document.createElement('div');
+    div.className = 'tree hidden';
+    div.id = `tree-${i}`;
+    div.style.cssText = `bottom:${bottom}%;left:${left}%;z-index:${zi};--sway:${sway};`;
+    div.innerHTML = buildTreeSVG(height, scale);
+    container.appendChild(div);
+  });
+
+  // Show trees based on current count
+  revealTrees(false);
+}
+
+function revealTrees(animate) {
+  const count = state.trees;
+  document.querySelectorAll('.tree').forEach((el, i) => {
+    if (i < count) {
+      if (el.classList.contains('hidden')) {
+        el.classList.remove('hidden');
+        if (animate) {
+          el.classList.add('growing');
+          setTimeout(() => el.classList.remove('growing'), 2000);
+        }
+      }
+    } else {
+      el.classList.add('hidden');
+      el.classList.remove('growing');
+    }
+  });
+  
+  // Waterfall
+  if (count >= 10) {
+    showWaterfall(animate && !state.waterfallUnlocked);
+    state.waterfallUnlocked = true;
+  }
+  
+  // Fireflies appear after 5 sessions
+  if (count >= 5) {
+    document.querySelectorAll('.firefly').forEach(f => {
+      f.style.opacity = '';
+    });
+  }
+}
+
+function showWaterfall(animate) {
+  const cliff = document.getElementById('cliff');
+  const wf = document.getElementById('waterfall-container');
+  const pool = document.getElementById('pool');
+  const mist = document.getElementById('mist-pool');
+  
+  cliff.classList.remove('hidden');
+  wf.classList.remove('hidden');
+  
+  if (animate) {
+    setTimeout(() => {
+      wf.style.height = '120px';
+      pool.style.opacity = '1';
+      mist.style.opacity = '1';
+    }, 500);
+  } else {
+    wf.style.height = '120px';
+    pool.style.opacity = '1';
+    mist.style.opacity = '1';
+  }
+}
+
+function initFireflies() {
+  const container = document.getElementById('firefly-container');
+  for (let i = 0; i < 15; i++) {
+    const f = document.createElement('div');
+    f.className = 'firefly';
+    f.style.cssText = `
+      left:${Math.random()*80+5}%;
+      top:${Math.random()*30+30}%;
+      --fd:${6+Math.random()*8}s;
+      --fd2:${Math.random()*6}s;
+      --fx:${(Math.random()-0.5)*60}px;
+      --fy:${-Math.random()*40-10}px;
+    `;
+    container.appendChild(f);
+  }
+}
+
+function initLeaves() {
+  const container = document.getElementById('leaf-container');
+  for (let i = 0; i < 12; i++) {
+    const l = document.createElement('div');
+    l.className = 'leaf-particle';
+    l.style.cssText = `
+      left:${Math.random()*90}%;
+      top:-20px;
+      --lf:${8+Math.random()*12}s;
+      --lfd:${Math.random()*12}s;
+      --lfx:${(Math.random()-0.5)*80}px;
+    `;
+    container.appendChild(l);
+  }
+}
+
+function drawMountains() {
+  const canvas = document.getElementById('mountain-canvas');
+  if (!canvas) return;
+  canvas.width = window.innerWidth;
+  canvas.height = canvas.offsetHeight;
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width, h = canvas.height;
+  
+  // Far mountains
+  ctx.fillStyle = 'rgba(30,50,20,0.5)';
+  ctx.beginPath();
+  ctx.moveTo(0, h);
+  ctx.lineTo(0, h*0.4);
+  ctx.lineTo(w*0.1, h*0.1);
+  ctx.lineTo(w*0.2, h*0.45);
+  ctx.lineTo(w*0.32, h*0.05);
+  ctx.lineTo(w*0.45, h*0.35);
+  ctx.lineTo(w*0.58, h*0.15);
+  ctx.lineTo(w*0.7, h*0.4);
+  ctx.lineTo(w*0.82, h*0.2);
+  ctx.lineTo(w*0.92, h*0.38);
+  ctx.lineTo(w, h*0.25);
+  ctx.lineTo(w, h);
+  ctx.closePath();
+  ctx.fill();
+  
+  // Closer hills
+  ctx.fillStyle = 'rgba(35,55,22,0.65)';
+  ctx.beginPath();
+  ctx.moveTo(0, h);
+  ctx.bezierCurveTo(w*0.15, h*0.3, w*0.3, h*0.6, w*0.5, h*0.4);
+  ctx.bezierCurveTo(w*0.65, h*0.25, w*0.8, h*0.55, w, h*0.35);
+  ctx.lineTo(w, h);
+  ctx.closePath();
+  ctx.fill();
+}
+
+function initStars() {
+  const sky = document.getElementById('sky-layer');
+  for (let i = 0; i < 80; i++) {
+    const s = document.createElement('div');
+    s.className = 'star';
+    s.style.cssText = `left:${Math.random()*100}%;top:${Math.random()*80}%;--d:${2+Math.random()*4}s;animation-delay:${Math.random()*4}s`;
+    sky.appendChild(s);
+  }
+}
+
+// ===================== TIMER LOGIC =====================
+function getPhaseTime() {
+  const t = currentTechniqueObj;
+  if (currentPhase === 'focus') return t.focus * 60;
+  if (currentPhase === 'short') return t.short * 60;
+  return t.long * 60;
+}
+
+function setPhase(phase) {
+  currentPhase = phase;
+  totalDuration = getPhaseTime();
+  timeLeft = totalDuration;
+  updateDisplay();
+  updateRing();
+  
+  const phases = { focus: 'Focus', short: 'Short Break', long: 'Long Break' };
+  document.getElementById('timer-phase').textContent = phases[phase].toLowerCase();
+  document.getElementById('session-label').textContent = phase === 'focus' ? 'Focus Session' : phase === 'short' ? 'Short Break' : 'Long Break';
+  
+  document.body.classList.toggle('break-mode', phase !== 'focus');
+}
+
+function toggleTimer() {
+  if (isRunning) {
+    pauseTimer();
+  } else {
+    startTimer();
+  }
+}
+
+function startTimer() {
+  if (timeLeft === 0) timeLeft = getPhaseTime();
+  if (totalDuration === 0) totalDuration = getPhaseTime();
+  isRunning = true;
+  document.getElementById('play-btn').textContent = '⏸';
+  document.getElementById('timer-phase').textContent = currentPhase === 'focus' ? 'focusing...' : 'resting...';
+  timerInterval = setInterval(tick, 1000);
+}
+
+function pauseTimer() {
+  isRunning = false;
+  clearInterval(timerInterval);
+  document.getElementById('play-btn').textContent = '▶';
+  document.getElementById('timer-phase').textContent = 'paused';
+}
+
+function resetTimer() {
+  pauseTimer();
+  setPhase('focus');
+  currentSession = 0;
+  renderSessionDots();
+}
+
+function skipPhase() {
+  pauseTimer();
+  advancePhase();
+}
+
+function tick() {
+  timeLeft--;
+  updateDisplay();
+  updateRing();
+  if (timeLeft <= 0) {
+    phaseComplete();
+  }
+}
+
+function phaseComplete() {
+  pauseTimer();
+  if (currentPhase === 'focus') {
+    onFocusComplete();
+  } else {
+    // break done
+    currentSession++;
+    setPhase('focus');
+    renderSessionDots();
+    notify('🌿 Break over! Time to focus.');
+  }
+}
+
+function onFocusComplete() {
+  checkNewDay();
+  state.totalSessions++;
+  state.todaySessions++;
+  state.totalMinutes += currentTechniqueObj.focus;
+  state.lastActiveDate = new Date().toDateString();
+  
+  // Update streak
+  if (!state.completedToday) {
+    state.completedToday = true;
+    const yesterday = new Date(Date.now() - 86400000).toDateString();
+    const lastActive = state.lastActiveDate;
+    if (lastActive === yesterday || state.streak === 0) {
+      state.streak = Math.max(1, state.streak + 1);
+    }
+  }
+  state.bestStreak = Math.max(state.bestStreak, state.streak);
+  
+  // Grow tree every session
+  const prevTrees = state.trees;
+  state.trees++;
+  if (state.trees > TREE_TEMPLATES.length) state.trees = TREE_TEMPLATES.length;
+  
+  saveState();
+  updateStats();
+  updateForestLevel();
+  
+  // Grow new tree animation
+  if (state.trees > prevTrees) {
+    revealTrees(true);
+    const treeIdx = state.trees - 1;
+    setTimeout(() => {
+      showCompletion(state.trees);
+    }, 300);
+  } else {
+    showCompletion(state.trees);
+  }
+  
+  // Advance to break
+  const sessionsForLong = currentTechniqueObj.sessions;
+  if ((currentSession + 1) % sessionsForLong === 0) {
+    setPhase('long');
+  } else {
+    setPhase('short');
+  }
+  renderSessionDots();
+}
+
+function advancePhase() {
+  if (currentPhase === 'focus') {
+    setPhase('short');
+  } else {
+    setPhase('focus');
+    currentSession++;
+    renderSessionDots();
+  }
+}
+
+function updateDisplay() {
+  const m = Math.floor(timeLeft / 60).toString().padStart(2, '0');
+  const s = (timeLeft % 60).toString().padStart(2, '0');
+  document.getElementById('timer-display').textContent = `${m}:${s}`;
+}
+
+function updateRing() {
+  const circumference = 628.3;
+  const progress = totalDuration > 0 ? timeLeft / totalDuration : 1;
+  const offset = circumference * (1 - progress);
+  const ring = document.getElementById('ring-progress');
+  ring.style.strokeDasharray = circumference;
+  ring.style.strokeDashoffset = offset;
+}
+
+function renderSessionDots() {
+  const sessions = currentTechniqueObj.sessions;
+  const container = document.getElementById('session-dots');
+  container.innerHTML = '';
+  for (let i = 0; i < sessions; i++) {
+    const dot = document.createElement('div');
+    dot.className = 'session-dot';
+    if (i < currentSession % sessions) dot.classList.add('done');
+    if (i === currentSession % sessions && currentPhase === 'focus') dot.classList.add('active');
+    container.appendChild(dot);
+  }
+}
+
+function updateStats() {
+  document.getElementById('stat-today').textContent = state.todaySessions;
+  document.getElementById('stat-total').textContent = state.totalSessions;
+  document.getElementById('stat-streak').textContent = state.streak + '🔥';
+  const hours = Math.floor(state.totalMinutes / 60);
+  const mins = state.totalMinutes % 60;
+  document.getElementById('stat-mins').textContent = hours > 0 ? `${hours}h${mins}m` : `${mins}m`;
+}
+
+// ===================== FOREST LEVEL =====================
+function getLevel(trees) {
+  for (let i = FOREST_LEVELS.length - 1; i >= 0; i--) {
+    if (trees >= FOREST_LEVELS[i].min) return { ...FOREST_LEVELS[i], index: i };
+  }
+  return { ...FOREST_LEVELS[0], index: 0 };
+}
+
+function updateForestLevel() {
+  const lvl = getLevel(state.trees);
+  const next = FOREST_LEVELS[lvl.index + 1];
+  const progress = next
+    ? ((state.trees - lvl.min) / (next.min - lvl.min)) * 100
+    : 100;
+  
+  document.getElementById('level-name').textContent = lvl.name;
+  document.getElementById('level-bar-fill').style.width = `${Math.min(100, progress)}%`;
+  document.getElementById('tree-count-display').textContent = state.trees;
+  
+  // Progress panel
+  document.getElementById('p-level-name').textContent = lvl.name;
+  document.getElementById('p-level-num').textContent = `Level ${lvl.index + 1}`;
+  document.getElementById('p-level-fill').style.width = `${Math.min(100, progress)}%`;
+  document.getElementById('p-next-level').textContent = next ? `${next.min - state.trees} sessions to ${next.name}` : '🏆 Max level reached!';
+  document.getElementById('p-total-sessions').textContent = state.totalSessions;
+  document.getElementById('p-total-hours').textContent = `${Math.floor(state.totalMinutes/60)}h`;
+  document.getElementById('p-best-streak').textContent = state.bestStreak;
+  document.getElementById('p-trees').textContent = state.trees;
+}
+
+// ===================== COMPLETION POPUP =====================
+function showCompletion(trees) {
+  const completions = [
+    { emoji: '🌱', title: 'First Sprout!', desc: 'Your forest journey begins. Every great forest starts with a single seed.' },
+    { emoji: '🌿', title: 'Growing Strong!', desc: 'New life is taking root. Your dedication shapes this woodland.' },
+    { emoji: '🌲', title: 'A Tree is Born!', desc: 'Another guardian joins your forest. The canopy thickens.' },
+    { emoji: '🎋', title: 'Bamboo Rising!', desc: 'Swift and resilient. Your forest grows with your knowledge.' },
+    { emoji: '🌳', title: 'Mighty Oak!', desc: 'An ancient strength spreads its roots. Your forest deepens.' },
+    { emoji: '✨', title: 'Session Complete!', desc: 'Another focused hour, another tree in your grove.' },
+  ];
+  
+  const c = completions[Math.min(trees - 1, completions.length - 1)];
+  document.getElementById('comp-emoji').textContent = c.emoji;
+  document.getElementById('comp-title').textContent = c.title;
+  document.getElementById('comp-desc').textContent = c.desc + ` (${trees} tree${trees !== 1 ? 's' : ''} total)`;
+  
+  document.getElementById('completion-popup').classList.add('show');
+}
+
+function dismissCompletion() {
+  document.getElementById('completion-popup').classList.remove('show');
+}
+
+// ===================== NOTIFY =====================
+function notify(msg) {
+  const el = document.getElementById('notif');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 3500);
+}
+
+// ===================== TECHNIQUE OVERLAY =====================
+function openTechnique() {
+  renderDayModes();
+  renderTechniques();
+  document.getElementById('technique-overlay').classList.add('open');
+}
+function closeTechnique() {
+  document.getElementById('technique-overlay').classList.remove('open');
+}
+
+function renderDayModes() {
+  const grid = document.getElementById('day-modes-grid');
+  grid.innerHTML = '';
+  DAY_MODES.forEach(d => {
+    const card = document.createElement('div');
+    card.className = 'day-card' + (selectedDayMode === d.id ? ' selected' : '');
+    card.style.setProperty('--card-accent', d.accent);
+    card.innerHTML = `
+      <div class="day-card-icon">${d.icon}</div>
+      <div class="day-card-name">${d.name}</div>
+      <div class="day-card-desc">${d.desc}</div>`;
+    card.onclick = () => {
+      selectedDayMode = d.id;
+      const preset = DAY_PRESETS[d.id];
+      if (preset) selectedTechnique = preset;
+      renderDayModes();
+      renderTechniques();
+    };
+    grid.appendChild(card);
+  });
+}
+
+function renderTechniques() {
+  const grid = document.getElementById('technique-grid');
+  grid.innerHTML = '';
+  TECHNIQUES.forEach(t => {
+    const card = document.createElement('div');
+    card.className = 'tech-card' + (selectedTechnique === t.id ? ' selected' : '');
+    card.innerHTML = `
+      <div class="tech-name">${t.icon} ${t.name} <span class="tech-tag">${t.tag}</span></div>
+      <div class="tech-desc">${t.desc}</div>
+      <div class="tech-time">⏱ ${t.focus}m focus · ${t.short}m break · ×${t.sessions}</div>`;
+    card.onclick = () => {
+      selectedTechnique = t.id;
+      renderTechniques();
+    };
+    grid.appendChild(card);
+  });
+}
+
+function applyTechnique() {
+  currentTechniqueObj = getTechnique(selectedTechnique);
+  document.getElementById('badge-mode').textContent = currentTechniqueObj.name;
+  pauseTimer();
+  setPhase('focus');
+  currentSession = 0;
+  renderSessionDots();
+  closeTechnique();
+  notify(`🌿 ${currentTechniqueObj.name} activated — ${currentTechniqueObj.focus} min focus`);
+}
+
+// ===================== PROGRESS OVERLAY =====================
+function openProgress() {
+  updateForestLevel();
+  renderForestItems();
+  document.getElementById('progress-overlay').classList.add('open');
+}
+function closeProgress() {
+  document.getElementById('progress-overlay').classList.remove('open');
+}
+
+function renderForestItems() {
+  const grid = document.getElementById('forest-items-grid');
+  grid.innerHTML = '';
+  
+  const items = [
+    { emoji: '🌱', name: 'Sprouts', count: Math.max(0, Math.min(state.trees, 5)) },
+    { emoji: '🌿', name: 'Ferns', count: state.trees >= 2 ? Math.min(state.trees - 2, 8) : 0 },
+    { emoji: '🌲', name: 'Pines', count: state.trees >= 5 ? Math.min(state.trees - 5, 10) : 0 },
+    { emoji: '🌳', name: 'Oaks', count: state.trees >= 10 ? Math.min(state.trees - 10, 10) : 0 },
+    { emoji: '🌊', name: 'Waterfall', count: state.waterfallUnlocked ? 1 : 0 },
+    { emoji: '✨', name: 'Fireflies', count: state.trees >= 5 ? Math.min(state.trees - 5, 15) : 0 },
+  ];
+  
+  items.forEach(item => {
+    const div = document.createElement('div');
+    div.className = 'forest-item';
+    div.innerHTML = `
+      <div class="forest-item-icon">${item.emoji}</div>
+      <div class="forest-item-count">${item.count}</div>
+      <div class="forest-item-name">${item.name}</div>`;
+    grid.appendChild(div);
+  });
+}
+
+// ===================== INIT =====================
+function init() {
+  checkNewDay();
+  initStars();
+  initForest();
+  initFireflies();
+  initLeaves();
+  drawMountains();
+  
+  setPhase('focus');
+  renderSessionDots();
+  updateStats();
+  updateForestLevel();
+  
+  // Restore waterfall if unlocked
+  if (state.trees >= 10 || state.waterfallUnlocked) {
+    showWaterfall(false);
+  }
+  
+  window.addEventListener('resize', () => {
+    drawMountains();
+  });
+}
+
+init();
+</script>
+</body>
+</html>
